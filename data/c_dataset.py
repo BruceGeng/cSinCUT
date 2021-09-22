@@ -66,6 +66,27 @@ def visualize_patch(focus_path, crop_width, zoom_levels_A, patch_locations_A, zo
     plt.imshow(img)
     plt.show()
 
+def crop_test_area(img, focus):
+    ts_img = transforms.Compose([transforms.ToTensor(),
+                           transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    ts_focus = transforms.Compose([transforms.ToTensor()])
+    input = ts_img(img)
+    mask = ts_focus(focus).squeeze(dim=0)
+    miny = 10000000000
+    maxy = 0
+    minx = 10000000000
+    maxx = 0
+    for i in range(mask.shape[0]):
+        for j in range(mask.shape[1]):
+            if mask[i, j] == 0:
+                miny = min(miny, i)
+                maxy = max(maxy, i)
+                minx = min(minx, j)
+                maxx = max(maxx, j)
+    cropped = input[:, miny:maxy, minx:maxx]
+
+    return cropped, [miny, maxy, minx, maxx]
+
 
 class SingleImageDataset(Dataset):
 
@@ -124,10 +145,11 @@ class SingleImageDataset(Dataset):
             B = transform_B(img_img)
         else:
             transform = get_c_transform(self.opt, method=Image.BILINEAR)
-            A = transform(img_img)
-            B = transform(img_img)
-
-        return {'A': A, 'B': B}
+            cropped, minmax = crop_test_area(img_img, self.focus_img)
+            ts = transforms.Compose([transforms.ToTensor()])
+            img_tensor = ts(img_img)
+            focus_tensor = ts(self.focus_img)
+        return {'A': cropped, 'B': cropped, 'AREA': minmax, 'IMG': img_tensor, 'FOCUS': focus_tensor}
 
     def __len__(self):
         """ Let's pretend the single image contains 100,000 crops for convenience.

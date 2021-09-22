@@ -103,6 +103,10 @@ class SinCUTModel(BaseModel):
         AtoB = self.opt.direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
+        if not self.opt.isTrain:
+            self.minmax = input['AREA']
+            self.img_tensor = input['IMG']
+            self.focus_tensor = input['FOCUS']
 
         self.image_paths = os.path.join(self.opt.dataroot, 'image.jpg')
 
@@ -120,10 +124,19 @@ class SinCUTModel(BaseModel):
             if self.opt.nce_idt:
                 self.idt_B = self.fake[self.real_A.size(0):]
         else:
-            # self.real = self.real[:,:,:1200,:960]
-            self.real = self.real[:, :, :1200, 960:1920]
+            miny, maxy, minx, maxx = self.minmax
+            print(self.real.shape)
             self.fake = self.netG(self.real)
             self.fake_B = self.fake[:self.real_A.size(0)]
+            img_tensor = self.img_tensor
+            for i in range(miny, maxy):
+                for j in range(minx, maxx):
+                    if self.focus_tensor[i, j] == 0:
+                        img_tensor[0, i, j] = self.fake_B[i - miny, j - maxx]
+                        img_tensor[1, i, j] = img_tensor[0, i, j]
+                        img_tensor[2, i, j] = img_tensor[0, i, j]
+            self.fake_B = img_tensor
+
             '''
             self.real_l = self.real[:,:,:1200,:960]
             self.real_r = self.real[:,:,:1200,960:1920]
