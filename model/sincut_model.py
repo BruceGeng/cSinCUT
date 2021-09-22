@@ -126,8 +126,8 @@ class SinCUTModel(BaseModel):
         else:
             miny, maxy, minx, maxx = self.minmax
             print(self.real.shape)
-            self.fake = self.netG(self.real)
-            self.fake_B = self.fake[:self.real_A.size(0)]
+            self.fake_B = self.netG(self.real)
+            #self.fake_B = self.fake[:self.real_A.size(0)]
             img_tensor = self.img_tensor
             for i in range(miny, maxy):
                 for j in range(minx, maxx):
