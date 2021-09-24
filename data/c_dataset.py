@@ -143,13 +143,14 @@ class SingleImageDataset(Dataset):
                      'flip': random.random() > 0.5}
             transform_B = get_c_transform(self.opt, params=param, method=Image.BILINEAR)
             B = transform_B(img_img)
+            return {'A': A, 'B': B}
         else:
             transform = get_c_transform(self.opt, method=Image.BILINEAR)
             cropped, minmax = crop_test_area(img_img, self.focus_img)
             ts = transforms.Compose([transforms.ToTensor()])
             img_tensor = ts(img_img)
             focus_tensor = ts(self.focus_img)
-        return {'A': cropped, 'B': cropped, 'AREA': minmax, 'IMG': img_tensor, 'FOCUS': focus_tensor}
+            return {'A': cropped, 'B': cropped, 'AREA': minmax, 'IMG': img_tensor, 'FOCUS': focus_tensor}
 
     def __len__(self):
         """ Let's pretend the single image contains 100,000 crops for convenience.
